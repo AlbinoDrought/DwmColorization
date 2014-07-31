@@ -3,6 +3,8 @@ DwmColorization
 
 Simple port of the base functions used in "ColorShifter-qt" to C#. See https://github.com/elfakyn/ColorShifter-qt for more information on usage.
 
+*See Examples/TestForm.cs for in-use examples.*
+
 Example of use without helper:
 
     static void Main(string args[])
