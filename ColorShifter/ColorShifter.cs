@@ -1,8 +1,9 @@
 ﻿using System.Runtime.InteropServices;
 using System.Drawing;
 using System;
+using System.Threading;
 
-namespace AlbinoDrought
+namespace ColorShifter
 {
     class ColorShifter
     {
@@ -26,6 +27,7 @@ namespace AlbinoDrought
         /// </summary>
         public ColorizationParameters cp;
         private ColorizationParameters original;
+        Thread colorThread;
 
         public ColorShiftHelper()
         {
@@ -51,7 +53,7 @@ namespace AlbinoDrought
             cp = _cp;
             update();
         }
-        
+
         /// <summary>
         /// Reset the theme color to what it was when this class was initialized
         /// </summary>
@@ -65,11 +67,6 @@ namespace AlbinoDrought
             DwmSetColorizationParameters(ref original);
         }
 
-        private int limit(int input, int maximum = 100, int minimum = 0)
-        {
-            return Math.Max(minimum, Math.Min(maximum, input));
-        }
-
         public void makeBright()
         {
             setColorBalance(120, false);
@@ -78,8 +75,85 @@ namespace AlbinoDrought
             setColorBalance(100, false);
         }
 
-        #region set/get
+        #region Blend
+        public void synchBlendInto(Color start, Color end, int pause = 50)
+        {
+            setColor(start);
+            for(int i = 0; i < 50; i++)
+            {
+                setColor(Blend(getColor(), end, 0.95));
+                Thread.Sleep(pause);
+            }
+        }
 
+        public void blendInto(Color end, int pause = 50)
+        {
+            blendInto(getColor(), end, pause);
+        }
+
+        public void blendInto(Color start, Color end, int pause = 50)
+        {
+            if (colorThread != null && colorThread.ThreadState == ThreadState.Running)
+                return;
+            colorThread = new Thread(() => { synchBlendInto(start, end, pause); });
+            colorThread.Start();
+        }
+        #endregion
+
+        #region Blink
+        /// <summary>
+        /// Blinks between color and color2 in the same thread
+        /// </summary>
+        /// <param name="color">First blink color</param>
+        /// <param name="color2">Second blink (return) color</param>
+        /// <param name="blinks">Amount of blinks</param>
+        /// <param name="duration">Pause after changing to the first color</param>
+        /// <param name="pause">Pause after changing to the second color</param>
+        public void synchBlink(Color color, Color color2, int blinks, int duration, int pause)
+        {
+            for (int i = 0; i < blinks; i++)
+            {
+                setColor(color);
+                Thread.Sleep(duration);
+                setColor(color2);
+                Thread.Sleep(pause);
+            }
+        }
+
+        /// <summary>
+        /// Blinks between a specified color and the current color asynchronously
+        /// </summary>
+        /// <param name="color">Blink color</param>
+        /// <param name="blinks">Amount of blinks</param>
+        /// <param name="duration">Pause after changing to the color</param>
+        /// <param name="pause">Pause after changing back from the color</param>
+        public void blink(Color color, int blinks = 2, int duration = 250, int pause = -1)
+        {
+            ColorizationParameters current = new ColorizationParameters();
+            DwmGetColorizationParameters(ref current);
+            blink(color, Color.FromArgb(current.color), blinks, duration, pause);
+        }
+
+        /// <summary>
+        /// Blinks between the specified colors asynchronously
+        /// </summary>
+        /// <param name="color">First blink color</param>
+        /// <param name="color2">Second blink (return) color</param>
+        /// <param name="blinks">Amount of blinks</param>
+        /// <param name="duration">Pause after changing to the first color</param>
+        /// <param name="pause">Pause after changing to the second color</param>
+        public void blink(Color color, Color color2, int blinks = 2, int duration = 250, int pause = -1)
+        {
+            if (colorThread != null && colorThread.ThreadState == ThreadState.Running)
+                return;
+            if (pause == -1)
+                pause = duration;
+            colorThread = new Thread(() => { synchBlink(color, color2, blinks, duration, pause); });
+            colorThread.Start();
+        }
+        #endregion
+
+        #region Set/Get Methods
         // cp.color
         public void setColor(Color c, bool update = true)
         {
@@ -102,6 +176,12 @@ namespace AlbinoDrought
         public Color getColor()
         {
             return Color.FromArgb(cp.color);
+        }
+
+        // original.color
+        public Color getOriginalColor()
+        {
+            return Color.FromArgb(original.color);
         }
 
         // cp.colorBalance
@@ -213,5 +293,26 @@ namespace AlbinoDrought
             return cp.glassReflectionIntensity;
         }
         #endregion
+
+        private int limit(int input, int maximum = 100, int minimum = 0)
+        {
+            return Math.Max(minimum, Math.Min(maximum, input));
+        }
+
+        //http://stackoverflow.com/questions/3722307/is-there-an-easy-way-to-blend-two-system-drawing-color-values
+        /// <summary>Blends the specified colors together.</summary>
+        /// <param name="color">Color to blend onto the background color.</param>
+        /// <param name="backColor">Color to blend the other color onto.</param>
+        /// <param name="amount">How much of <paramref name="color"/> to keep,
+        /// “on top of” <paramref name="backColor"/>.</param>
+        /// <returns>The blended colors.</returns>
+        private static Color Blend(Color color, Color backColor, double amount)
+        {
+            byte r = (byte)((color.R * amount) + backColor.R * (1 - amount));
+            byte g = (byte)((color.G * amount) + backColor.G * (1 - amount));
+            byte b = (byte)((color.B * amount) + backColor.B * (1 - amount));
+            return Color.FromArgb(r, g, b);
+        }
     }
 }
+

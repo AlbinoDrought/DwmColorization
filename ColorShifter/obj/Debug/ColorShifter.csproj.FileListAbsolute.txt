@@ -1,0 +1,6 @@
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\bin\Debug\ColorShifter.pdb
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\obj\Debug\ColorShifter.Examples.TestForm.resources
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\obj\Debug\ColorShifter.csproj.GenerateResource.Cache
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\obj\Debug\ColorShifter.pdb
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\bin\Debug\ColorShifter.exe
+d:\documents\visual studio 2013\Projects\ColorShifter\ColorShifter\obj\Debug\ColorShifter.exe
